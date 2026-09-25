@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B0C10">
+<meta name="description" content="Zetrix.gg — Cyberpunk gaming top-up platform demo">
+<title>Zetrix.gg — Gaming Top-Up Command Center</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { obsidian:'#0B0C10', neon:'#00F0FF', electric:'#9400D3' },
+      boxShadow: {
+        neon:'0 0 22px rgba(0,240,255,.25)',
+        purple:'0 0 22px rgba(148,0,211,.25)'
+      }
+    }
+  }
+}
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+:root{--bg:#0B0C10;--cyan:#00F0FF;--purple:#9400D3;--muted:#8b95a7;--panel:#10131a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0%,rgba(0,240,255,.08),transparent 28%),radial-gradient(circle at 85% 15%,rgba(148,0,211,.1),transparent 30%),var(--bg);color:#eefcff;font-family:Inter,ui-sans-serif,system-ui,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,240,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(148,0,211,.025) 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(to bottom,#000,transparent 85%);z-index:-1}
+.neon{color:var(--cyan);text-shadow:0 0 14px rgba(0,240,255,.55)}.purple{color:#d890ff;text-shadow:0 0 14px rgba(148,0,211,.55)}
+.panel{background:linear-gradient(145deg,rgba(18,22,30,.94),rgba(8,10,15,.94));border:1px solid rgba(0,240,255,.14);box-shadow:inset 0 0 28px rgba(0,240,255,.025),0 12px 40px rgba(0,0,0,.25);backdrop-filter:blur(14px)}
+.glow-border{border:1px solid rgba(0,240,255,.38);box-shadow:0 0 24px rgba(0,240,255,.1),inset 0 0 24px rgba(0,240,255,.035)}
+.pulse{animation:pulse 1.8s ease-in-out infinite}.float{animation:float 4s ease-in-out infinite}.scan{position:relative;overflow:hidden}.scan:after{content:"";position:absolute;left:-20%;right:-20%;height:2px;top:-5%;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.4;animation:scan 3.2s linear infinite}
+@keyframes pulse{50%{box-shadow:0 0 30px rgba(0,240,255,.35)}}@keyframes float{50%{transform:translateY(-5px)}}@keyframes scan{to{top:105%}}
+.game-card{transition:.25s transform,.25s border-color,.25s box-shadow;position:relative;overflow:hidden}.game-card:hover{transform:translateY(-6px);border-color:rgba(0,240,255,.55);box-shadow:0 20px 60px rgba(0,240,255,.1)}
+.game-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,transparent 50%,rgba(0,240,255,.08));pointer-events:none}
+.btn{transition:.2s transform,.2s filter}.btn:active{transform:scale(.97)}.btn:hover{filter:brightness(1.12)}
+.wallet.active{outline:2px solid currentColor;box-shadow:0 0 28px currentColor}.hiddenx{display:none!important}
+.progress-line{height:3px;background:linear-gradient(90deg,var(--cyan),var(--purple));box-shadow:0 0 14px rgba(0,240,255,.5);transition:width .5s}
+.toast{animation:toast .25s ease-out}@keyframes toast{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.modal-bg{background:rgba(0,0,0,.78);backdrop-filter:blur(10px)}
+input,select{background:#0a0d12!important;color:#eaffff!important;border-color:rgba(0,240,255,.18)!important}
+input:focus,select:focus{border-color:var(--cyan)!important;box-shadow:0 0 0 2px rgba(0,240,255,.08)!important}
+.qr{image-rendering:pixelated;background:repeating-conic-gradient(#eefcff 0 25%,#111 0 50%) 50%/16px 16px;position:relative}
+.qr:after{content:"";position:absolute;inset:8px;background:radial-gradient(circle,#00f0ff 0 18%,#9400d3 19% 32%,transparent 33%);mix-blend-mode:screen;opacity:.9}
+.kpi{background:linear-gradient(135deg,rgba(0,240,255,.08),rgba(148,0,211,.08))}
+@media(max-width:640px){.game-grid{grid-template-columns:1fr}.modal-card{margin:8px}.hide-mobile{display:none}.mobile-stack{flex-direction:column}}
+</style>
+</head>
+<body>
+<div id="toastRoot" class="fixed right-3 top-3 z-[100] space-y-2 max-w-sm"></div>
+
+<div id="notice" class="text-[11px] sm:text-xs tracking-wider border-b border-cyan-400/10 bg-black/50 px-3 py-2 text-center text-cyan-100">
+  <span class="inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-cyan-300 pulse"></span><span id="noticeText">INITIALIZING ZETRIX NETWORK…</span></span>
+</div>
+
+<header class="sticky top-0 z-40 border-b border-white/5 bg-[#0B0C10]/85 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <button class="text-left" onclick="scrollTo({top:0,behavior:'smooth'})">
+      <div class="text-xl font-black tracking-tight sm:text-2xl"><span class="neon">ZETRIX</span><span class="purple">.GG</span></div>
+      <div class="text-[9px] uppercase tracking-[.35em] text-slate-500">Gaming Distribution Network</div>
+    </button>
+    <div class="hidden items-center gap-2 text-xs text-slate-400 md:flex">
+      <span class="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5"><i class="fa-solid fa-shield-halved text-emerald-300"></i> Secure Node</span>
+      <span class="rounded-full border border-cyan-400/20 bg-cyan-400/5 px-3 py-1.5"><i class="fa-solid fa-bolt text-cyan-300"></i> Instant Queue</span>
+    </div>
+  </div>
+</header>
+
+<main class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10">
+  <section class="grid items-center gap-7 lg:grid-cols-[1.2fr_.8fr]">
+    <div>
+      <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/5 px-3 py-1 text-[10px] uppercase tracking-[.25em] text-cyan-200">
+        <i class="fa-solid fa-satellite-dish"></i> Live Distribution Online
+      </div>
+      <h1 class="max-w-4xl text-4xl font-black leading-[.95] tracking-tight sm:text-6xl lg:text-7xl">Power your <span class="neon">game.</span><br>Own the <span class="purple">moment.</span></h1>
+      <p class="mt-5 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">Fast, focused top-ups for the games you actually play. Select a game, choose a package, and move your account to the next level.</p>
+      <div class="mt-6 flex flex-wrap gap-3 text-xs">
+        <span class="panel rounded-xl px-4 py-3"><b class="text-white">24/7</b><span class="ml-2 text-slate-500">Automated Queue</span></span>
+        <span class="panel rounded-xl px-4 py-3"><b class="text-white">&lt;60s</b><span class="ml-2 text-slate-500">Target Delivery</span></span>
+        <span class="panel rounded-xl px-4 py-3"><b class="text-white">3</b><span class="ml-2 text-slate-500">Wallet Gateways</span></span>
+      </div>
+    </div>
+    <div class="panel scan glow-border float rounded-3xl p-5 sm:p-7">
+      <div class="flex items-center justify-between"><span class="text-[10px] uppercase tracking-[.3em] text-slate-500">Network Status</span><span class="flex items-center gap-2 text-xs text-emerald-300"><i class="fa-solid fa-circle text-[6px] pulse"></i> ONLINE</span></div>
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <div class="kpi rounded-2xl p-4"><div class="text-[10px] text-slate-500">Orders Routed</div><div id="liveOrders" class="mt-1 text-2xl font-black neon">1,284</div></div>
+        <div class="kpi rounded-2xl p-4"><div class="text-[10px] text-slate-500">Delivery Rate</div><div class="mt-1 text-2xl font-black text-white">99.8%</div></div>
+        <div class="kpi rounded-2xl p-4"><div class="text-[10px] text-slate-500">Queue Latency</div><div id="latency" class="mt-1 text-2xl font-black text-white">0.8s</div></div>
+        <div class="kpi rounded-2xl p-4"><div class="text-[10px] text-slate-500">Nodes</div><div class="mt-1 text-2xl font-black purple">03</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-12">
+    <div class="mb-5 flex items-end justify-between gap-4"><div><div class="text-[10px] uppercase tracking-[.3em] text-cyan-300">01 / Select Universe</div><h2 class="mt-1 text-2xl font-black sm:text-3xl">Choose your game</h2></div><div class="text-xs text-slate-500">Tap a card to access packages</div></div>
+    <div id="games" class="game-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-4"></div>
+  </section>
+</main>
+
+<footer class="border-t border-white/5 bg-black/20 px-4 py-8 text-center">
+  <button id="adminTrigger" onclick="footerTap()" class="select-none text-xs text-slate-500 transition hover:text-cyan-300">© 2026 Zetrix.gg</button>
+  <div class="mt-2 text-[10px] uppercase tracking-[.25em] text-slate-700">Built for speed • secured by node isolation • support available 24/7</div>
+</footer>
+
+<!-- Checkout -->
+<div id="checkoutModal" class="modal-bg fixed inset-0 z-50 hidden overflow-y-auto p-2 sm:p-6">
+  <div class="modal-card mx-auto my-2 max-w-3xl rounded-3xl panel glow-border p-4 sm:my-8 sm:p-7">
+    <div class="flex items-start justify-between gap-4">
+      <div><div class="text-[10px] uppercase tracking-[.3em] text-cyan-300">02 / Secure Checkout</div><h2 id="checkoutTitle" class="mt-1 text-2xl font-black"></h2><div id="checkoutSub" class="mt-1 text-xs text-slate-500"></div></div>
+      <button onclick="closeCheckout()" class="btn rounded-xl border border-white/10 px-3 py-2 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_.85fr]">
+      <div>
+        <div class="mb-3 text-[10px] uppercase tracking-[.25em] text-slate-500">Package Matrix</div>
+        <div id="packages" class="grid grid-cols-2 gap-2"></div>
+        <div class="mt-5 mb-3 text-[10px] uppercase tracking-[.25em] text-slate-500">Player Identifier</div>
+        <input id="playerId" class="w-full rounded-xl border px-4 py-3 text-sm outline-none" placeholder="Enter Player ID / UID">
+        <div id="walletSection" class="hiddenx">
+          <div class="mt-5 mb-3 text-[10px] uppercase tracking-[.25em] text-slate-500">Payment Gateway</div>
+          <div id="wallets" class="grid grid-cols-3 gap-2"></div>
+          <div class="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+            <div class="flex items-center justify-between gap-3"><span class="text-xs font-bold">Payable Amount</span><span id="payable" class="text-xl font-black neon">৳0</span></div>
+            <div class="mt-3 flex gap-2"><input id="txid" class="min-w-0 flex-1 rounded-xl border px-3 py-3 text-sm" placeholder="Transaction ID (TxID) — required"><button onclick="copyNumber()" class="btn whitespace-nowrap rounded-xl border border-cyan-400/25 px-3 text-xs text-cyan-200"><i class="fa-regular fa-copy"></i> Copy Number</button></div>
+            <p id="payInstructions" class="mt-3 text-[11px] leading-5 text-slate-400">Select a wallet to reveal payment instructions.</p>
+          </div>
+          <div class="mt-4 flex items-center gap-3 rounded-2xl border border-purple-400/20 bg-purple-400/5 p-4">
+            <div id="qr" class="qr h-24 w-24 shrink-0 rounded-lg"></div>
+            <div><div class="text-xs font-bold">Dynamic Payment QR</div><p class="mt-1 text-[11px] leading-5 text-slate-500">Vector-style demo QR changes with package price and wallet selection.</p></div>
+          </div>
+          <button onclick="submitOrder()" class="btn mt-4 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-600 px-5 py-4 text-sm font-black uppercase tracking-widest text-black shadow-neon">Confirm Payment & Route <i class="fa-solid fa-arrow-right ml-2"></i></button>
+        </div>
+      </div>
+      <div class="panel rounded-2xl p-4">
+        <div class="flex items-center justify-between"><span class="text-[10px] uppercase tracking-[.25em] text-slate-500">Live Delivery Pipeline</span><span class="text-[10px] text-emerald-300"><i class="fa-solid fa-circle text-[6px]"></i> TRACKING</span></div>
+        <div id="pipeline" class="mt-6 space-y-4"></div>
+        <div class="mt-6 border-t border-white/5 pt-5"><div class="text-xs font-bold">Zetrix Support Network</div><p class="mt-1 text-[11px] leading-5 text-slate-500">Need help with your order? Reach the support node.</p><a id="telegramLink" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 px-4 py-2 text-xs text-cyan-200 hover:bg-cyan-400/5"><i class="fa-brands fa-telegram"></i> Open Telegram Support</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin -->
+<div id="adminModal" class="modal-bg fixed inset-0 z-[60] hidden overflow-y-auto p-2 sm:p-6">
+ <div id="adminCard" class="modal-card mx-auto my-2 max-w-6xl rounded-3xl panel glow-border p-4 sm:my-6 sm:p-7"></div>
+</div>
+
+<script>
+const DEFAULT_STATE={
+ notice:"⚡ FLASH NODE: Instant top-ups are live — verify your TxID before routing.",
+ telegram:"https://t.me/zetrix_support",
+ wallets:{
+  bKash:{enabled:true,limit:50000,used:0,color:"#D12053",number:"01XXXXXXXXX"},
+  Nagad:{enabled:true,limit:50000,used:0,color:"#F7941D",number:"01XXXXXXXXX"},
+  Rocket:{enabled:true,limit:50000,used:0,color:"#8C3494",number:"01XXXXXXXXX"}
+ },
+ games:[
+  {id:"ff",name:"Free Fire",tag:"DIAMONDS",icon:"fa-fire",banner:"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80",packages:[[100,85],[310,250],[520,410],[1060,790]]},
+  {id:"dls",name:"Dream League Soccer",tag:"COINS",icon:"fa-futbol",banner:"https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1200&q=80",packages:[[500,110],[1200,240],[2500,450],[5000,820]]},
+  {id:"pubg",name:"PUBG Mobile",tag:"UC",icon:"fa-crosshairs",banner:"https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=1200&q=80",packages:[[60,95],[325,430],[660,820],[1800,2050]]},
+  {id:"ml",name:"Mobile Legends",tag:"DIAMONDS",icon:"fa-dragon",banner:"https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80",packages:[[86,115],[172,225],[257,325],[706,830]]}
+ ],
+ rates:{ff:1,dls:1,pubg:1,ml:1}
+};
+let state=JSON.parse(localStorage.getItem("zetrix_state")||"null")||DEFAULT_STATE;
+const clone=o=>JSON.parse(JSON.stringify(o));
+function save(){localStorage.setItem("zetrix_state",JSON.stringify(state))}
+function money(n){return "৳"+Number(n).toLocaleString("en-BD")}
+function toast(msg,type="info"){const el=document.createElement("div");el.className="toast panel rounded-xl border px-4 py-3 text-xs shadow-neon";el.style.borderColor=type==="error"?"rgba(248,113,113,.4)":"rgba(0,240,255,.25)";el.innerHTML=msg;toastRoot.appendChild(el);setTimeout(()=>el.remove(),3500)}
+function renderGames(){
+ games.innerHTML=state.games.map(g=>{
+  const available=Object.values(state.wallets).some(w=>w.enabled&&w.used<w.limit);
+  return `<article class="game-card panel rounded-3xl ${available?"":"opacity-50"}">
+   <div class="h-36 bg-cover bg-center" style="background-image:linear-gradient(180deg,transparent,rgba(11,12,16,.96)),url('${g.banner}')"></div>
+   <div class="relative -mt-10 p-4">
+    <div class="flex items-center justify-between"><div class="grid h-11 w-11 place-items-center rounded-2xl border border-cyan-400/25 bg-black/60 text-cyan-300"><i class="fa-solid ${g.icon}"></i></div><span class="rounded-full border border-purple-400/20 px-2 py-1 text-[9px] tracking-widest text-purple-200">${g.tag}</span></div>
+    <h3 class="mt-3 text-lg font-black">${g.name}</h3><div class="mt-1 text-[10px] uppercase tracking-[.2em] text-slate-500">Rapid digital distribution</div>
+    <button ${available?"":"disabled"} onclick="openCheckout('${g.id}')" class="btn mt-4 w-full rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-xs font-bold text-cyan-100">${available?"View Packages":"All Gateways Capped"} <i class="fa-solid fa-chevron-right ml-1"></i></button>
+   </div>
+  </article>`
+ }).join("")
+}
+let selectedGame=null,selectedPkg=null,selectedWallet=null;
+function openCheckout(id){
+ selectedGame=state.games.find(g=>g.id===id);selectedPkg=selectedGame.packages[0];selectedWallet=null;
+ checkoutTitle.textContent=selectedGame.name;checkoutSub.textContent=`${selectedGame.tag} • Choose a package and payment gateway`;
+ packages.innerHTML=selectedGame.packages.map((p,i)=>`<button onclick="selectPackage(${i})" id="pkg${i}" class="btn rounded-xl border border-white/10 bg-white/[.02] p-3 text-left hover:border-cyan-400/30"><div class="text-xs font-bold">${p[0].toLocaleString()} ${selectedGame.tag}</div><div class="mt-1 text-sm font-black text-cyan-200">${money(p[1]*state.rates[selectedGame.id])}</div></button>`).join("");
+ wallets.innerHTML=Object.entries(state.wallets).map(([n,w])=>`<button onclick="selectWallet('${n}')" class="wallet rounded-xl border border-white/10 p-3 text-center text-xs ${w.enabled&&w.used<w.limit?"":"opacity-30 cursor-not-allowed"}" style="color:${w.color}" ${w.enabled&&w.used<w.limit?"":"disabled"}><i class="fa-solid fa-wallet mb-1"></i><div>${n}</div><div class="mt-1 text-[8px] text-slate-500">${w.enabled&&w.used<w.limit?"AVAILABLE":"CAPPED"}</div></button>`).join("");
+ walletSection.classList.remove("hiddenx");checkoutModal.classList.remove("hidden");document.body.style.overflow="hidden";selectPackage(0);renderPipeline(0);telegramLink.href=state.telegram;
+}
+function closeCheckout(){checkoutModal.classList.add("hidden");document.body.style.overflow=""}
+function selectPackage(i){selectedPkg=selectedGame.packages[i];document.querySelectorAll("#packages button").forEach(x=>x.classList.remove("border-cyan-400","bg-cyan-400/10"));document.getElementById("pkg"+i).classList.add("border-cyan-400","bg-cyan-400/10");updatePayable()}
+function updatePayable(){const total=selectedPkg?selectedPkg[1]*state.rates[selectedGame.id]:0;payable.textContent=money(total);qr.style.filter=`hue-rotate(${Math.round(total%360)}deg)`}
+function selectWallet(n){selectedWallet=n;document.querySelectorAll(".wallet").forEach(x=>x.classList.remove("active"));event.currentTarget.classList.add("active");const w=state.wallets[n];payInstructions.innerHTML=`Send <b class="text-white">${money(selectedPkg[1]*state.rates[selectedGame.id])}</b> to <b style="color:${w.color}">${n}</b> number <b class="text-white">${w.number}</b>. Then enter the TxID above and confirm. <span class="text-cyan-300">Do not share OTP/PIN.</span>`;updatePayable()}
+function copyNumber(){if(!selectedWallet)return toast("Select a wallet first.","error");navigator.clipboard?.writeText(state.wallets[selectedWallet].number);toast("Payment number copied to clipboard.")}
+function renderPipeline(active=0){const steps=["Created","Payment Verifying","Distributing","Delivered"];pipeline.innerHTML=steps.map((s,i)=>`<div><div class="flex items-center gap-3"><div class="grid h-9 w-9 place-items-center rounded-full border ${i<=active?"border-cyan-300 bg-cyan-300/10 text-cyan-200":"border-white/10 text-slate-600"}">${i<active?"✓":i+1}</div><div class="flex-1"><div class="text-xs font-bold ${i<=active?"text-white":"text-slate-600"}">${s}</div><div class="mt-2 h-1 overflow-hidden rounded-full bg-white/5"><div class="progress-line" style="width:${i<active?100:i===active?55:0}%"></div></div></div></div></div>`).join("")}
+function submitOrder(){
+ if(!playerId.value.trim())return toast("Enter a Player ID / UID.","error");
+ if(!selectedWallet)return toast("Select a payment gateway.","error");
+ if(!txid.value.trim())return toast("Transaction ID (TxID) is required.","error");
+ const w=state.wallets[selectedWallet],amt=selectedPkg[1]*state.rates[selectedGame.id];
+ if(w.used+amt>w.limit)return toast("Gateway daily transaction ceiling reached.","error");
+ w.used+=amt;save();renderGames();renderPipeline(1);toast("Order created. Payment verification node engaged.");
+ let step=1;const timer=setInterval(()=>{step++;renderPipeline(Math.min(step,3));if(step>=3)clearInterval(timer)},1800);
+ closeCheckout();
+}
+function adminAuth(){
+ const key=prompt("ZETRIX OWNER ACCESS KEY");if(key===null)return;
+ let fails=Number(sessionStorage.getItem("zetrix_fail")||0);
+ if(key!== "ZetrixOwner2026#"){fails++;sessionStorage.setItem("zetrix_fail",fails);if(fails>=3){adminCard.innerHTML=`<div class="min-h-[55vh] grid place-items-center text-center"><div><div class="text-7xl font-black text-red-400">404</div><h2 class="mt-2 text-2xl font-black">Node Disconnected</h2><p class="mt-2 text-xs text-slate-500">Security layer has isolated this session.</p><button onclick="closeAdmin()" class="mt-5 rounded-xl border border-white/10 px-5 py-3 text-xs">Close</button></div></div>`;adminModal.classList.remove("hidden");}else toast(`ACCESS DENIED • Attempt ${fails}/3`,"error");return}
+ sessionStorage.removeItem("zetrix_fail");renderAdmin();adminModal.classList.remove("hidden");document.body.style.overflow="hidden";
+}
+function renderAdmin(){
+ const revenue=12840+Math.floor(Math.random()*900),profit=Math.floor(revenue*.31),orders=48+Math.floor(Math.random()*12);
+ adminCard.innerHTML=`<div class="flex flex-wrap items-start justify-between gap-4"><div><div class="text-[10px] uppercase tracking-[.3em] text-cyan-300">Restricted / Owner Node</div><h2 class="mt-1 text-2xl font-black">Zetrix Command Center</h2></div><button onclick="closeAdmin()" class="rounded-xl border border-white/10 px-3 py-2"><i class="fa-solid fa-xmark"></i></button></div>
+ <div class="mt-6 grid gap-3 sm:grid-cols-3"><div class="kpi rounded-2xl p-4"><div class="text-[10px] text-slate-500">Today's Revenue</div><div class="mt-1 text-2xl font-black neon">${money(revenue)}</div></div><div class="kpi rounded-2xl p-4"><div class="text-[10px] text-slate-500">Net Profit</div><div class="mt-1 text-2xl font-black purple">${money(profit)}</div></div><div class="kpi rounded-2xl p-4"><div class="text-[10px] text-slate-500">Active Orders</div><div class="mt-1 text-2xl font-black">${orders}</div></div></div>
+ <div class="mt-6 grid gap-5 lg:grid-cols-2">
+  <section class="panel rounded-2xl p-4"><div class="flex items-center justify-between"><h3 class="font-bold">Gateway Ceiling</h3><span class="text-[9px] uppercase tracking-widest text-slate-500">Daily reset</span></div><div class="mt-4 space-y-3">${Object.entries(state.wallets).map(([n,w])=>`<div class="rounded-xl border border-white/5 p-3"><div class="flex items-center justify-between gap-2"><div class="font-bold text-sm">${n}</div><label class="text-xs"><input type="checkbox" ${w.enabled?"checked":""} onchange="toggleWallet('${n}',this.checked)"> Enabled</label></div><div class="mt-3 grid grid-cols-2 gap-2"><label class="text-[10px] text-slate-500">Limit<input class="mt-1 w-full rounded-lg border px-3 py-2 text-xs" type="number" value="${w.limit}" onchange="setLimit('${n}',this.value)"></label><label class="text-[10px] text-slate-500">Used<input class="mt-1 w-full rounded-lg border px-3 py-2 text-xs" type="number" value="${w.used}" onchange="setUsed('${n}',this.value)"></label></div><div class="mt-2 h-1 rounded bg-white/5"><div class="h-1 rounded bg-gradient-to-r from-cyan-400 to-purple-500" style="width:${Math.min(100,w.used/w.limit*100)}%"></div></div></div>`).join("")}</div></section>
+  <section class="panel rounded-2xl p-4"><h3 class="font-bold">Content Manager</h3><label class="mt-4 block text-[10px] text-slate-500">Marquee Announcement<input id="adminNotice" class="mt-1 w-full rounded-lg border px-3 py-2 text-xs" value="${state.notice}"></label><label class="mt-3 block text-[10px] text-slate-500">Telegram Support URL<input id="adminTelegram" class="mt-1 w-full rounded-lg border px-3 py-2 text-xs" value="${state.telegram}"></label><div class="mt-4 text-[10px] uppercase tracking-widest text-slate-500">Game Banner URLs</div>${state.games.map(g=>`<label class="mt-2 block text-[10px] text-slate-500">${g.name}<input id="banner_${g.id}" class="mt-1 w-full rounded-lg border px-3 py-2 text-xs" value="${g.banner}"></label>`).join("")}<button onclick="saveContent()" class="btn mt-4 w-full rounded-xl bg-cyan-300 px-4 py-3 text-xs font-black uppercase text-black">Publish Content Changes</button></section>
+ </div>
+ <div class="mt-5 panel rounded-2xl p-4"><div class="flex items-center justify-between"><h3 class="font-bold">Revenue Signal</h3><span class="text-[10px] text-emerald-300">LIVE SIMULATION</span></div><div class="mt-4 flex h-28 items-end gap-1">${Array.from({length:32},(_,i)=>`<div class="flex-1 rounded-t bg-gradient-to-t from-cyan-500/20 to-purple-400/70" style="height:${20+Math.random()*80}%"></div>`).join("")}</div></div>`;
+}
+function toggleWallet(n,v){state.wallets[n].enabled=v;save();renderGames();renderAdmin()}
+function setLimit(n,v){state.wallets[n].limit=Math.max(0,Number(v)||0);save();renderGames()}
+function setUsed(n,v){state.wallets[n].used=Math.max(0,Number(v)||0);save();renderGames()}
+function saveContent(){state.notice=adminNotice.value;state.telegram=adminTelegram.value;state.games.forEach(g=>g.banner=document.getElementById("banner_"+g.id).value);save();noticeText.textContent=state.notice;renderGames();toast("Content changes published across the network.")}
+function closeAdmin(){adminModal.classList.add("hidden");document.body.style.overflow=""}
+let footerCount=0,footerTimer;
+function footerTap(){footerCount++;clearTimeout(footerTimer);footerTimer=setTimeout(()=>footerCount=0,1400);if(footerCount===5){footerCount=0;adminAuth()}}
+noticeText.textContent=state.notice;renderGames();
+setInterval(()=>{liveOrders.textContent=(1284+Math.floor(Math.random()*30)).toLocaleString();latency.textContent=(.6+Math.random()*1.2).toFixed(1)+"s"},2200);
+</script>
+</body>
+</html>
